@@ -26,7 +26,7 @@ static const int YnodeSites =16;
 static const int ZnodeSites =16;
 static const int TnodeSites =32/2;
 static const int Confsize=700;
-static const int ResampleingSize =100;
+static const int ResampleingSize =700;
 static const int DataSize = XnodeSites*YnodeSites*ZnodeSites;
 static const int XYZnodeSites = XnodeSites*YnodeSites*ZnodeSites;
 //set in out info
@@ -76,15 +76,27 @@ int main(){
       delete [] ydata;
     }
     
-    double* err = NULL; 
-    double* ave = NULL;
+    double* err = new double[DataSize]; 
+    double* ave = new double[DataSize];
+    double* reData = NULL;
+    
+    for(int b = 0 ; b< ResampleingSize ; b++)
+      {
+	reData = bs.calcResample(b);
+	for(int ixyz = 0;ixyz<DataSize;ixyz++)
+	  {
+	    cout <<"resample array  "<<ixyz <<" "<<reData[ixyz]<<endl;
+	  }
+      }
+    
  
-    ave= bs.calcAve();
-    err= bs.calcErr();
+    bs.calcAve(ave);
+    bs.calcErr(err);
 
         for(int ixyz = 0;ixyz<DataSize;ixyz++){cout<<"ave "<<ixyz<<" "<<ave[ixyz]<<" err "<<err[ixyz]<<endl;}
 	inPot.outErr(xdata,ave,err,outPath,outStaticsInfo,physInfo,ResampleingSize,iT,DataSize);
-
+	delete [] ave;	
+	delete [] err;
   }//It
   delete [] xdata;
 cout <<"@End all jobs"<<endl; 
