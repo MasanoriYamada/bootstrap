@@ -26,7 +26,7 @@ static const int YnodeSites =16;
 static const int ZnodeSites =16;
 static const int TnodeSites =32/2;
 static const int Confsize=700;
-static const int ResampleingSize =700;
+static const int ResampleingSize =10;
 static const int DataSize = XnodeSites*YnodeSites*ZnodeSites;
 static const int XYZnodeSites = XnodeSites*YnodeSites*ZnodeSites;
 //set in out info
@@ -64,8 +64,9 @@ int main(){
   }
 
   for(int iT=T_in  ; iT< T_fi +1  ; iT++ ){
-    BOOTSTRAP bs;
+    BOOTSTRAP bs,bs1;
     bs.set(DataSize, Confsize, ResampleingSize);
+    bs1.set(DataSize, Confsize, ResampleingSize);
     
     for (int iconf=0; iconf< Confsize; iconf++) {
       COMPLEX* ydata = new COMPLEX[DataSize]();
@@ -78,20 +79,31 @@ int main(){
     
     double* err = new double[DataSize]; 
     double* ave = new double[DataSize];
-    double* reData = NULL;
+    double* err1 = new double[DataSize]; 
+    double* ave1 = new double[DataSize];
+    complex<double>* reData = new complex<double>[DataSize];
     
     for(int b = 0 ; b< ResampleingSize ; b++)
       {
-	reData = bs.calcResample(b);
+	bs.calcResample(reData,b);
 	for(int ixyz = 0;ixyz<DataSize;ixyz++)
 	  {
 	    cout <<"resample array  "<<ixyz <<" "<<reData[ixyz]<<endl;
 	  }
+	bs1.setResampleData(reData,b);
       }
-    
+    delete [] reData; reData = NULL;
  
     bs.calcAve(ave);
     bs.calcErr(err);
+    bs1.calcAve(ave1);
+    bs1.calcErr(err1);
+
+    for(int ixyz = 0;ixyz<DataSize;ixyz++)
+{
+  if (ave[ixyz]!=ave1[ixyz]) cout <<" ave is not same "<<endl;
+  if (err[ixyz]!=err1[ixyz]) cout <<" err is not same "<<endl;
+}
 
         for(int ixyz = 0;ixyz<DataSize;ixyz++){cout<<"ave "<<ixyz<<" "<<ave[ixyz]<<" err "<<err[ixyz]<<endl;}
 	inPot.outErr(xdata,ave,err,outPath,outStaticsInfo,physInfo,ResampleingSize,iT,DataSize);
