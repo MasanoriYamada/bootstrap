@@ -14,6 +14,7 @@
 #include <iostream>
 
 using namespace std;
+using namespace yamada;
 typedef complex<double> COMPLEX;
 
 

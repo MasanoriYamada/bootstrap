@@ -1,0 +1,55 @@
+brief: calc bootstrap
+available data type: int array, float array, double array, complex<double> array, 
+but complex is only used real part at calc ave&err
+
+データタイプは自動で合わせてくれる
+errとaveを計算するとき複素数型は自動的に実部のみを取り出して計算で利用する。
+ただしbootstrapのデータを作成する場合は複素数型のまま読み書きを行う(f(x)を計算するときにxを生のまま使いたいから)
+bootstrapで作成した状態のデータからの計算も可能
+
+How to use
+・using namespace yamada;
+・class BOOTSTRAPのオブジェクトを作る
+confsize, binsize Datasizeの設定を行う。
+以下のメンバ関数を利用
+set(DataSize, Confsize, ResampleingSize);;  //デフォルトは全て0
+・データの入力
+setData(std::complex<double>* in, int iconf)    //raw data  
+void setBinData(std::complex<double>* in, int iconf);    //bin data
+・計算を実行してaveとerrを返す。
+.calcAve(ave); //平均を計算 ouble*
+.calcErr(err); //エラーを計算 double*
+
+※ 入力はテンプレートを利用しているのでどんな型でも使用可能
+
+Resamplingデータ(中間データの読み書き)
+書き出し
+.calcResample(reData,b);
+読みこみ
+.setResampleData(reData,b);
+
+bはBOOTSTRAPのリサンプリング数まで回る。
+reDataはdatasizeの足を持った配列で、どんな型で動く
+(ただしテンプレートで実装しているので、保存しておいたファイルのデータの型と自分でちゃんと合わせてください)
+
+
+
+
+ラベルの意味
+confsize : 統計の数
+binsize  : ビンの大きさ
+datasize : 入力データの数
+
+in	 : 入力データの先頭ポインタ
+iconf	 : 統計のインデックス
+
+
+
+
+個人用メモ
+complex のみ顕にかき、後はテンプレートを使った。
+デバッグ済(int double complex <double>) 多分complex <int float>は動かない
+.real()などを使っているからこれはテンプレでは実装できなかった
+confsize binsizeがコンストラクタから変更を受けていなければ、エラーを返す
+
+デバッグようのメンバ関数を作るといいかも

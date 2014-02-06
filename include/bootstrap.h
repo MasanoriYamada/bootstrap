@@ -17,6 +17,8 @@
 #include <time.h>
 #include <math.h>
 
+namespace yamada{
+
 class BOOTSTRAP
 {
 public:
@@ -30,17 +32,24 @@ public:
   template<typename DATA>
   void setResampleData(DATA data, int iconf);
   void setResampleData(std::complex<double>*  data, int iconf);
-  double* calcResample(int b);
+  template<typename DATA>
+  void calcResample(DATA out,int b);
+  void calcResample(std::complex<double>* out,int b);
   void calcAve(double*);
   void calcErr(double*);
 
 private:
   void resampling();
+  void cresampling();
   void Ave();
   void Err();
   inline double confData_(int id, int j)
   {
     return ConfData_[(id) + DataSize_ *(j)];
+  }
+  inline std::complex<double> cconfData_(int id, int j)
+  {
+    return cConfData_[(id) + DataSize_ *(j)];
   }
   inline double resamleData_(int id, int b)
   {
@@ -54,7 +63,13 @@ private:
   double* ConfData_;
   double* ResampleData_;
   double* DoubleResampleData_;
-  double* reData_;
+
+
+  std::complex<double>* cConfData_;
+  std::complex<double>* cResampleData_;
+
+
+
   double* ave_;
   double* err_;
   double* doubleAve_;
@@ -64,9 +79,6 @@ private:
   int ResampleSize_;
   bool aveInit_;
 };
-
-
-
 
 
 BOOTSTRAP::BOOTSTRAP()
@@ -83,7 +95,10 @@ BOOTSTRAP::~BOOTSTRAP()
   delete [] ConfData_; ConfData_ = NULL;
   delete [] ResampleData_; ResampleData_ = NULL;
   delete [] DoubleResampleData_; DoubleResampleData_ = NULL;
-  delete [] reData_; reData_ = NULL;
+  delete [] cConfData_; cConfData_ = NULL;
+  delete [] cResampleData_; cResampleData_ = NULL;
+
+
   delete [] ave_; ave_ = NULL;
   delete [] err_; err_ = NULL;
   delete [] doubleAve_; doubleAve_ = NULL;
@@ -104,10 +119,13 @@ void BOOTSTRAP::set(int DataSize, int ConfSize, int ResampleSize)
   DataSize_ = DataSize;
   ConfSize_ = ConfSize;
   ResampleSize_ = ResampleSize;
+
   ConfData_ = new double[DataSize_*ConfSize_]();
   ResampleData_ = new double[DataSize_*ResampleSize_]();
   DoubleResampleData_ = new double[DataSize_*ResampleSize_]();
-  reData_ = new double[DataSize_]();
+  cConfData_ = new std::complex<double>[DataSize_*ConfSize_]();
+  cResampleData_ = new std::complex<double>[DataSize_*ResampleSize_]();
+ 
   ave_ = new double[DataSize_]();
   err_ = new double[DataSize_]();
   doubleAve_    = new double[DataSize]();
@@ -124,29 +142,31 @@ template <typename DATA>     void BOOTSTRAP::setData(DATA in, int iconf){
 }
 void BOOTSTRAP::setData(std::complex<double>* in, int iconf)
 {
-  double* tmp =new double[DataSize_]();
+  std::complex<double>* tmp =new std::complex<double>[DataSize_]();
   for(int id = 0; id <DataSize_; id++){
-    tmp[id] = (double)in[id].real();
+    tmp[id] = in[id];
   }
-  memcpy(ConfData_ + iconf*DataSize_,tmp,sizeof(tmp) * DataSize_);
+  memcpy(cConfData_ + iconf*DataSize_,tmp,sizeof(tmp) * 2 * DataSize_);
   delete[] tmp;
-  if(ConfSize_ == iconf + 1)  resampling();
+  if(ConfSize_ == iconf + 1)  cresampling();
 }
 template <typename DATA> void BOOTSTRAP::setResampleData(DATA in, int iconf)
 {
   double*       tmp = new double[DataSize_]();
-  for(int id = 0; id <DataSize_; id++){
+  for(int id = 0; id <DataSize_; id++)
+    {
     tmp[id] = (double)in[id];
-  }
+    }
   memcpy(ResampleData_ + iconf*DataSize_,tmp,sizeof(tmp)*DataSize_);
   delete[] tmp;
 }
 void BOOTSTRAP::setResampleData(std::complex<double>* in, int iconf)
 {
   double*       tmp = new double[DataSize_]();
-  for(int id = 0; id <DataSize_; id++){
-    tmp[id] = (double)in[id].real();
-  }
+  for(int id = 0; id <DataSize_; id++)
+    {
+      tmp[id] = (double)in[id].real();
+    }
   memcpy(ResampleData_ + iconf*DataSize_,tmp,sizeof(tmp)*DataSize_);
   delete[] tmp;
 }
@@ -167,13 +187,37 @@ void BOOTSTRAP::resampling()
     }
 }
 
-double* BOOTSTRAP::calcResample(int b)
+void BOOTSTRAP::cresampling()
+{
+  for (int id = 0 ; id < DataSize_ ; id ++)
+    {
+      for (int b = 0 ; b < ResampleSize_ ; b++)
+	{
+	  std::complex<double> tmp = (0.0, 0.0);
+	  for (int j = 0 ; j < ConfSize_ ; j++)
+	    {
+	      tmp = tmp + cconfData_(id , random(ConfSize_));
+	    }
+	  cResampleData_[(id) + DataSize_ *(b)] = tmp / (double)ConfSize_;
+	  ResampleData_[(id) + DataSize_ *(b)] = tmp.real() / (double)ConfSize_;
+	}
+    }
+}
+template<typename DATA>
+void BOOTSTRAP::calcResample(DATA out, int b)
 {
   for (int id =0 ; id <DataSize_ ; id ++)
     {
-      reData_[id]  = ResampleData_[(id) + DataSize_ *(b)];
+      out[id]  = ResampleData_[(id) + DataSize_ *(b)];
     }
-  return reData_;
+}
+
+void BOOTSTRAP::calcResample(std::complex<double>* out, int b)
+{
+  for (int id =0 ; id <DataSize_ ; id ++)
+    {
+      out[id]  = cResampleData_[(id) + DataSize_ *(b)];
+    }
 }
 
 void BOOTSTRAP::Ave()
@@ -207,5 +251,5 @@ void BOOTSTRAP::Err()
     }
 }
 
-
+}
 #endif
